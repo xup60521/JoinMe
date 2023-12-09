@@ -1,95 +1,56 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+import LogIn from "@/component/LogIn";
+import Link from "next/link";
+import NewEvent from "@/component/NewEvent";
+import SearchPage from "@/component/SearchPage";
+import { db } from "@/db";
+import { attendeeTable, eventTable } from "@/db/schema";
+import Card from "@/component/Card";
 
-export default function Home() {
+export default async function Home({searchParams}: {searchParams: {displayName?: string, handle?: string}}) {
+
+  const {displayName, handle} = searchParams;
+  const eventList = await db
+                          .select()
+                          .from(eventTable)
+                          .execute()
+  const attendees = await db
+                          .select()
+                          .from(attendeeTable)
+                          .execute()
+
+  
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    <>
+      {(!displayName || !handle)? <main>
+      </main> : 
+      <>
+        <main>
+          <div className="top">
+            <span>{`${displayName?? ""}@${handle?? ""}`}</span>
+            <div>
+              <strong>Join Me</strong>
+              <SearchPage eventList={eventList} attendees={attendees} handle={handle} displayName={displayName} />
+            </div>
+            <div>
+              <span><Link href="/">Log out</Link></span>
+              <NewEvent userHandle={handle} />
+            </div>
+          </div>
+          <div className="event-list">
+            {eventList.map((d)=>{
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+              const peopleTable = attendees.filter((item)=>item.targetEvent===d.id)
+              const peopleCount = peopleTable.length
+              const amIhere = peopleTable.map((data)=>{return data.userHandle}).includes(handle)
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+              return (
+                <Card key={d.title} title={d.title} id={d.id} displayName={displayName} handle={handle} amIhere={amIhere} peopleCount={peopleCount} />)
+            })}
+          </div>
+        </main>
+      </>}
+      <LogIn />
+    </>
   )
 }
